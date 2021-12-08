@@ -18,14 +18,14 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.reloadImageLoop();
+    this.reloadImage();
   }
 
   takeSnapshot(): void {
     this.http.get(`${environment.api}/save`).subscribe();
   }
 
-  reloadImageLoop(): void {
+  reloadImage(): void {
     this.http
         .get(`${environment.api}/cam`, { responseType: 'blob' })
         .subscribe(image => {
@@ -37,8 +37,6 @@ export class AppComponent implements OnInit {
           if (image) {
               reader.readAsDataURL(image);
           }
-
-          setTimeout(() => this.reloadImageLoop(), 1);
-        })
+        });
   }
 }
