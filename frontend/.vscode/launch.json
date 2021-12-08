@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug TGF localhost",
+            "userDataDir": "${workspaceFolder}/.vscode/vscode-chrome-debug-userdatadir",
+            "webRoot": "${workspaceFolder}",
+            "runtimeArgs": ["http://localhost:8000/static/index.html"]
+          },
+          {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug Serve",
+            "url": "http://localhost:4200",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+      
+            "sourceMapPathOverrides": {
+              "webpack:///./*": "${workspaceRoot}/*"
+            }
+          }
+    ]
+}
