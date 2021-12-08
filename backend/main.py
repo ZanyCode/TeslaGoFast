@@ -33,6 +33,7 @@ app.mount("/static", StaticFiles(directory=DIR_STATIC_FILES), name="static")
 @app.get("/api/cam")
 async def get_current_image():
     # camera = cv2.VideoCapture(0)
+    camera.open(-1)
     return_value, image = camera.read()
     res, im_png = cv2.imencode(".png", image)
     # del(camera)
