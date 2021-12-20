@@ -33,13 +33,14 @@ app.mount("/static", StaticFiles(directory=DIR_STATIC_FILES), name="static")
 
 @app.get("/api/cam")
 async def get_current_image():
-    #camera.open(-1)
+    camera.open(-1)
     return_value, image = camera.read()
     res, im_png = cv2.imencode(".png", image)
     return StreamingResponse(io.BytesIO(im_png.tobytes()), media_type="image/png")    
 
 @app.get("/api/save")
 async def save_current_image():
+    camera.open(-1)
     return_value, image = camera.read()
     now = datetime.now() # current date and time
     filename = join(DIR_BACKEND, now.strftime("%Y-%m-%d_%H-%M-%S_snapshot.png"))
