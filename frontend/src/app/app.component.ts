@@ -22,7 +22,18 @@ export class AppComponent implements OnInit {
   }
 
   takeSnapshot(): void {
-    this.http.get(`${environment.api}/save`).subscribe();
+    this.http
+    .get(`${environment.api}/save`, { responseType: 'blob' })
+    .subscribe(image => {
+      let reader = new FileReader(); 
+      reader.addEventListener("load", () => {
+          this.imageToShow = reader.result; 
+      }, false);
+  
+      if (image) {
+          reader.readAsDataURL(image);
+      }
+    });
   }
 
   reloadImage(): void {
