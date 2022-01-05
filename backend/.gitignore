@@ -1,1 +1,6 @@
 .venv
+train_data_numbers
+train_data_traffic_signs
+checkpoint*
+evaluation_data_numbers
+*.pyc
