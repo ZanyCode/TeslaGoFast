@@ -1,3 +1,19 @@
 <img [src]="imageToShow" alt="Place image title">
+<br>
 <button (click)="reloadImage()" style="height: 100px;">Reload Image</button>
 <button (click)="takeSnapshot()" style="height: 100px;">Take Snapshot</button>
+
+<br>
+<label for="speed-x">Current Speed X</label>
+<input id="speed-x" type="number" [(ngModel)]="current_speed_x">
+<br>
+<label for="speed-y">Current Speed Y</label>
+<input id="speed-y" type="number" [(ngModel)]="current_speed_y">
+<br>
+<label for="max-x">Max Speed X</label>
+<input id="max-x" type="number" [(ngModel)]="max_speed_x">
+<br>
+<label for="max-y">Max Speed Y</label>
+<input id="max-y" type="number" [(ngModel)]="max_speed_y">
+<br>
+<button (click)="save()" style="height: 50px;">Save</button>

@@ -13,12 +13,27 @@ export class AppComponent implements OnInit {
   title = 'teslagofast';
   imageToShow: string | ArrayBuffer | null = '';
 
+  current_speed_x = 0;
+  current_speed_y = 0;
+
+  max_speed_x = 0;
+  max_speed_y = 0;
+
   constructor(private http: HttpClient) {
 
   }
 
   ngOnInit(): void {
     this.reloadImage();
+    this.http
+    .get(`${environment.api}/coords`)
+    .subscribe(data => {
+      this.current_speed_x = (data as any)[0];
+      this.current_speed_y = (data as any)[1];
+      this.max_speed_x = (data as any)[2];
+      this.max_speed_y = (data as any)[3];
+      console.log(data);      
+    });
   }
 
   takeSnapshot(): void {
@@ -49,5 +64,11 @@ export class AppComponent implements OnInit {
               reader.readAsDataURL(image);
           }
         });
+  }
+
+  save(): void {
+    this.http.post(`${environment.api}/save`, {current_x: this.current_speed_x, current_y: this.current_speed_y, max_x: this.max_speed_x, max_y: this.max_speed_y}).subscribe(res => {
+
+    })
   }
 }
