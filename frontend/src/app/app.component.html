@@ -1,7 +1,7 @@
-<img [src]="imageToShow" alt="Place image title">
+<img (click)="reloadImage()" [src]="imageToShow" alt="Place image title">
 <br>
-<button (click)="reloadImage()" style="height: 100px;">Reload Image</button>
-<button (click)="takeSnapshot()" style="height: 100px;">Take Snapshot</button>
+<!-- <button (click)="reloadImage()" style="height: 100px;">Reload Image</button>
+<button (click)="takeSnapshot()" style="height: 100px;">Take Snapshot</button> -->
 
 <br>
 <label for="speed-x">Current Speed X</label>
@@ -17,3 +17,13 @@
 <input id="max-y" type="number" [(ngModel)]="max_speed_y">
 <br>
 <button (click)="save()" style="height: 50px;">Save</button>
+<br>
+<br>
+<button (click)="startRecording()" style="height: 50px;">Start Recording</button>
+<button (click)="stopRecording()" style="height: 50px;">Stop Recording</button>
+<br>
+IsRecording: {{isRecording}}
+<br>
+<img (click)="reloadSpeedImage()" [src]="speedImage" alt="Place image title">
+<img (click)="reloadMaxSpeedImage()" [src]="maxSpeedImage" alt="Place image title">
+
