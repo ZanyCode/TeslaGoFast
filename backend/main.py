@@ -63,7 +63,7 @@ def main():
 
             while(True):
                 success, image = camera.read()
-                image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
+                # image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
                 if success:
                     image_full = cv2.rotate(image, cv2.ROTATE_180)   
                     image_current_speed = image_full[current_speed_box[1]: current_speed_box[3], current_speed_box[0]:current_speed_box[2]]
