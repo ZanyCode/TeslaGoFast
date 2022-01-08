@@ -55,8 +55,12 @@ def main():
             nonlocal image_full, image_current_speed, image_max_speed
             base_path_current_speed_images = join(DIR_BACKEND, 'recording', 'current_speed')
             base_path_max_speed_images = join(DIR_BACKEND, 'recording', 'max_speed')
-            os.makedirs(base_path_current_speed_images)
-            os.makedirs(base_path_max_speed_images)
+            if not os.path.exists(base_path_current_speed_images):
+                os.makedirs(base_path_current_speed_images)
+
+            if not os.path.exists(base_path_max_speed_images):
+                os.makedirs(base_path_max_speed_images)
+                
             recording_sequence_current_speed = 0
             recording_sequence_max_speed = 0
             session_id = str(uuid.uuid4())
