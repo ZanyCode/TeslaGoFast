@@ -108,10 +108,10 @@ def main():
                     # Write to display
                     if prev_current_speed != current_speed:
                         prev_current_speed = current_speed
-                        display.lcd_display_string(f"Current Speed: {current_speed}km/h", 1)
+                        display.lcd_display_string(f"Current: {current_speed}km/h", 1)
                     if prev_max_speed != max_speed:
                         prev_max_speed = max_speed
-                        display.lcd_display_string(f"Max Speed: {max_speed}km/h", 2)
+                        display.lcd_display_string(f"Max: {max_speed}km/h", 2)
 
                     if record_images:
                         im_path_current_speed = join(DIR_BACKEND, 'recording', 'current_speed', f"{session_id}_{str(recording_sequence_current_speed).zfill(6)}.png")
