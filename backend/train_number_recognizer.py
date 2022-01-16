@@ -16,12 +16,21 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from numpy.lib.utils import info
-DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
-input_shape = (67, 119, 3)
-value_range = (5, 150)
-num_classes = value_range[1] - value_range[0] + 1
 
-def get_number_model():
+def main():    
+    DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
+    model_path = join(DIR_BACKEND, 'checkpoint_numbers')
+    model_path_finetuned = join(DIR_BACKEND, 'checkpoint_numbers_finetuned')
+    data_dir = join(DIR_BACKEND, 'training', 'merged')
+    # train_model(data_dir, model_path)
+    finetune_model(model_path, data_dir, model_path_finetuned)
+
+
+def get_number_model(trainable_layers=None, optimizer=tf.keras.optimizers.Adam(0.001)):
+    input_shape = (128, 128, 3)
+    value_range = (20, 135)
+    num_classes = value_range[1] - value_range[0] + 1
+
     base_model = tf.keras.applications.MobileNetV2(
         input_shape=None,
         alpha=1.0,
@@ -34,86 +43,75 @@ def get_number_model():
         classifier_activation="softmax"
     )
 
-    base_model.trainable = False
-
-    # locked_layers = 17
-    # for layer in base_model.layers[:locked_layers]:
-    #     layer.trainable=False
-    # for layer in base_model.layers[locked_layers:]:
-    #     layer.trainable=True
-
-    # model = tf.keras.Sequential([
-    #     base_model,
-    #     tf.keras.layers.GlobalAveragePooling2D(),
-    #     tf.keras.layers.Dense(1024,activation='relu'),
-    #     tf.keras.layers.Dense(512,activation='relu'),
-    #     tf.keras.layers.Dense(num_classes,activation='softmax')
-    # ])
-
+    base_model.trainable = trainable_layers != None
+    
+    if trainable_layers != None:
+        fine_tune_at = len(base_model.layers) - trainable_layers
+        base_model.trainable = True
+        # Freeze all the layers before the `fine_tune_at` layer
+        for layer in base_model.layers[:fine_tune_at]:
+            layer.trainable = False
+    else:
+        base_model.trainable = False
+  
     inputs = tf.keras.Input(shape=input_shape)
     x = base_model(inputs, training = False)
     x=tf.keras.layers.GlobalAveragePooling2D()(x)
-    x=tf.keras.layers.Dense(1024,activation='relu')(x) #we add dense layers so that the model can learn more complex functions and classify for better results.
+    # x=tf.keras.layers.Dense(1024,activation='relu')(x) #we add dense layers so that the model can learn more complex functions and classify for better results.
     # x=tf.keras.layers.Dense(1024,activation='relu')(x) #dense layer 2
-    x=tf.keras.layers.Dense(512,activation='relu')(x) #dense layer 3
+    # x=tf.keras.layers.Dense(512,activation='relu')(x) #dense layer 3
+    x=tf.keras.layers.Dropout(0.5)(x)
     preds=tf.keras.layers.Dense(num_classes,activation='softmax')(x) #final layer with softmax activation
     model = tf.keras.Model(inputs, preds)
-    model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=["accuracy"])
     return model
 
-def get_number_dataset(data_dir):
-    # train_dataset = tf.keras.preprocessing.image_dataset_from_directory(data_dir, labels='inferred', batch_size = 128, image_size=(70, 35), color_mode = 'rgb', label_mode = 'categorical')
-    # AUTOTUNE = tf.data.AUTOTUNE
+def prep_image_to_grayscale(rgb):
+    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+    img = np.repeat(np.expand_dims(gray, -1), 3, -1)    
+    img = img.astype(np.float32) / 255.0
+    img = (img - 0.5) * 2
+    return img    
 
-    # train_dataset = train_dataset.prefetch(buffer_size=AUTOTUNE)
-    # return train_dataset
+# def prep_image_training(img):   
+#     img = img.astype(np.float32) / 255.0
+#     img = (img - 0.5) * 2
+#     return img     
 
-    def prep_fn(img):
-        img = img.astype(np.float32) / 255.0
-        img = (img - 0.5) * 2
-        return img
-
-    # datagen = ImageDataGenerator(
-    #     preprocessing_function=prep_fn,
-    #     featurewise_center=False,
-    #     featurewise_std_normalization=False,
-    #     rotation_range=0,
-    #     width_shift_range=0,
-    #     height_shift_range=0,
-    #     horizontal_flip=0,
-    #     brightness_range=None,
-    #     zoom_range=0,
-    #     validation_split=0.2)
-
+def get_number_dataset_train(data_dir, seed=42, subset='training'):
     datagen = ImageDataGenerator(
-        preprocessing_function=prep_fn,
+        preprocessing_function=prep_image_to_grayscale,
         featurewise_center=False,
         featurewise_std_normalization=False,
-        rotation_range=5,
+        rotation_range=3,
         width_shift_range=0.2,
         height_shift_range=0.2,
+        shear_range=0.2,
         horizontal_flip=False,
-        brightness_range=(0.8, 1),
         zoom_range=(0.8, 1.2),
         validation_split=0.2)
 
-    train_dataset = datagen.flow_from_directory(data_dir, target_size=(67, 119), color_mode = 'rgb', class_mode='categorical', batch_size = 128)
+    train_dataset = datagen.flow_from_directory(data_dir, target_size=(128, 128), color_mode = 'rgb', class_mode='categorical', batch_size = 128, seed=seed, subset=subset)
     return train_dataset
 
+def get_number_dataset_validation(data_dir, seed=42, batch_size=128, subset='validation'):
+    datagen = ImageDataGenerator(preprocessing_function=prep_image_to_grayscale, validation_split=0.2)
 
-if __name__ == '__main__':
-    data_dir = join(DIR_BACKEND, 'train_data_numbers')
-   
+    train_dataset = datagen.flow_from_directory(data_dir, target_size=(128, 128), color_mode = 'rgb', class_mode='categorical', batch_size = batch_size, seed=seed, subset=subset)
+    return train_dataset
 
+def train_model(data_dir, output_path):           
     model = get_number_model()
-    train_dataset = get_number_dataset(data_dir)
+    seed = 42
+    train_dataset = get_number_dataset_train(data_dir, seed)
+    validation_dataset = get_number_dataset_validation(data_dir, seed)
 
     # base_learning_rate = 0.001
-    checkpoint_filepath = join(DIR_BACKEND, 'checkpoint_numbers')
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=checkpoint_filepath,
+        filepath=output_path,
         save_weights_only=True,
-        monitor='loss',
+        monitor='val_loss',
         verbose =2,
         mode='min',
         save_best_only=True)
@@ -123,4 +121,28 @@ if __name__ == '__main__':
     #               metrics=['accuracy'])
 
     # model.load_weights(checkpoint_filepath)
-    model.fit(x = train_dataset, epochs=1000, callbacks=[model_checkpoint_callback])
+    # model.compile(loss="categorical_crossentropy", optimizer=tf.keras.optimizers.Adam(0.001), metrics=["accuracy"])
+    model.fit(x = train_dataset, validation_data=validation_dataset, epochs=1000, callbacks=[model_checkpoint_callback])
+
+
+def finetune_model(model_path, data_dir, output_path):
+    model = get_number_model(trainable_layers=54, optimizer=tf.keras.optimizers.Adam(1e-3))
+    model.load_weights(model_path)
+    seed = 42
+    train_dataset = get_number_dataset_train(data_dir, seed)
+    validation_dataset = get_number_dataset_validation(data_dir, seed)
+
+
+    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=output_path,
+            save_weights_only=True,
+            monitor='val_loss',
+            verbose =2,
+            mode='min',
+            save_best_only=True)
+
+    model.fit(x = train_dataset, validation_data=validation_dataset, epochs=1000, callbacks=[model_checkpoint_callback])
+
+
+if __name__ == '__main__':
+    main()
