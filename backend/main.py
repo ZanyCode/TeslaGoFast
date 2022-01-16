@@ -17,6 +17,7 @@ from os.path import abspath, join, dirname
 from pydantic import BaseModel
 import asyncio
 import uuid
+import drivers
 from tflite_runtime.interpreter import load_delegate, Interpreter
 
 
@@ -54,6 +55,10 @@ def main():
 
     camera = cv2.VideoCapture(0)
     app = FastAPI()
+    display = drivers.Lcd()
+
+    prev_current_speed = 0
+    prev_max_speed = 0
 
     @app.on_event("startup")
     async def run_detector():
@@ -99,7 +104,14 @@ def main():
                     image_max_speed = image_full[max_speed_box[1]: max_speed_box[3], max_speed_box[0]:max_speed_box[2]]
                     current_speed = estimate_speed(interpreter, image_current_speed)
                     max_speed = estimate_speed(interpreter, image_max_speed)
-                    print(f"Current: {current_speed}, Max: {max_speed}")
+
+                    # Write to display
+                    if prev_current_speed != current_speed:
+                        prev_current_speed = current_speed
+                        display.lcd_display_string(f"Current Speed: {current_speed}km/h", 1)
+                    if prev_max_speed != max_speed:
+                        prev_max_speed = max_speed
+                        display.lcd_display_string(f"Max Speed: {max_speed}km/h", 2)
 
                     if record_images:
                         im_path_current_speed = join(DIR_BACKEND, 'recording', 'current_speed', f"{session_id}_{str(recording_sequence_current_speed).zfill(6)}.png")
