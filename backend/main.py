@@ -67,10 +67,12 @@ def main():
             model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
             interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
             interpreter.allocate_tensors()
+            print('Using edgetpu')
         except:
             model = join(DIR_BACKEND, 'tgf_quant.tflite')
             interpreter = Interpreter(model)
             interpreter.allocate_tensors()
+            print('Using default model')
         # interpreter = tf.lite.Interpreter(join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite'))
         # interpreter.allocate_tensors()
 
