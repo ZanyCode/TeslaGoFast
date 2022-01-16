@@ -82,7 +82,7 @@ def main():
         # interpreter.allocate_tensors()
 
         async def get_run_task():
-            nonlocal image_full, image_current_speed, image_max_speed
+            nonlocal image_full, image_current_speed, image_max_speed, prev_max_speed, prev_current_speed
             base_path_current_speed_images = join(DIR_BACKEND, 'recording', 'current_speed')
             base_path_max_speed_images = join(DIR_BACKEND, 'recording', 'max_speed')
             if not os.path.exists(base_path_current_speed_images):
