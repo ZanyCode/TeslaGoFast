@@ -83,7 +83,8 @@ def main():
 
         async def get_run_task():
             nonlocal image_full, image_current_speed, image_max_speed, prev_max_speed, prev_current_speed
-            session_id = str(uuid.uuid4())
+            # session_id = str(uuid.uuid4())
+            session_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             base_path_current_speed_images = join(DIR_BACKEND, 'recording', session_id, 'current_speed')
             base_path_max_speed_images = join(DIR_BACKEND, 'recording', session_id, 'max_speed')
             if not os.path.exists(base_path_current_speed_images):
