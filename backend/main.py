@@ -83,17 +83,16 @@ def main():
 
         async def get_run_task():
             nonlocal image_full, image_current_speed, image_max_speed, prev_max_speed, prev_current_speed
-            base_path_current_speed_images = join(DIR_BACKEND, 'recording', 'current_speed')
-            base_path_max_speed_images = join(DIR_BACKEND, 'recording', 'max_speed')
+            session_id = str(uuid.uuid4())
+            base_path_current_speed_images = join(DIR_BACKEND, 'recording', session_id, 'current_speed')
+            base_path_max_speed_images = join(DIR_BACKEND, 'recording', session_id, 'max_speed')
             if not os.path.exists(base_path_current_speed_images):
                 os.makedirs(base_path_current_speed_images)
 
             if not os.path.exists(base_path_max_speed_images):
                 os.makedirs(base_path_max_speed_images)
                 
-            recording_sequence_current_speed = 0
-            recording_sequence_max_speed = 0
-            session_id = str(uuid.uuid4())
+            recording_sequence_idx = 0
 
             while(True):
                 success, image = camera.read()
@@ -101,25 +100,26 @@ def main():
                 if success:
                     image_full = cv2.rotate(image, cv2.ROTATE_180)   
                     image_current_speed = image_full[current_speed_box[1]: current_speed_box[3], current_speed_box[0]:current_speed_box[2]]
-                    image_max_speed = image_full[max_speed_box[1]: max_speed_box[3], max_speed_box[0]:max_speed_box[2]]
-                    current_speed = estimate_speed(interpreter, image_current_speed)
-                    max_speed = estimate_speed(interpreter, image_max_speed)
-
-                    # Write to display
-                    if prev_current_speed != current_speed:
-                        prev_current_speed = current_speed
-                        display.lcd_display_string(f"Current: {current_speed}km/h", 1)
-                    if prev_max_speed != max_speed:
-                        prev_max_speed = max_speed
-                        display.lcd_display_string(f"Max:    {max_speed}km/h", 2)
+                    image_max_speed = image_full[max_speed_box[1]: max_speed_box[3], max_speed_box[0]:max_speed_box[2]]                    
+                    current_speed = estimate_speed(interpreter, image_current_speed)                  
 
                     if record_images:
-                        im_path_current_speed = join(DIR_BACKEND, 'recording', 'current_speed', f"{session_id}_{str(recording_sequence_current_speed).zfill(6)}.png")
-                        im_path_max_speed = join(DIR_BACKEND, 'recording', 'max_speed', f"{session_id}_{str(recording_sequence_max_speed).zfill(6)}.png")
+                        im_path_current_speed = join(DIR_BACKEND, 'recording', session_id, 'current_speed', f"{session_id}_{str(recording_sequence_idx).zfill(6)}.png")
                         cv2.imwrite(im_path_current_speed, image_current_speed)
+                        recording_sequence_idx += 1
+                        im_path_max_speed = join(DIR_BACKEND, 'recording', session_id, 'max_speed', f"{session_id}_{str(recording_sequence_idx).zfill(6)}.png")
                         cv2.imwrite(im_path_max_speed, image_max_speed)
-                        recording_sequence_current_speed += 1
-                        recording_sequence_max_speed += 1
+                        recording_sequence_idx += 1
+                    else:
+                        max_speed = estimate_speed(interpreter, image_max_speed)
+
+                        # Write to display
+                        if prev_current_speed != current_speed:
+                            prev_current_speed = current_speed
+                            display.lcd_display_string(f"Current: {current_speed}km/h", 1)
+                        if prev_max_speed != max_speed:
+                            prev_max_speed = max_speed
+                            display.lcd_display_string(f"Max:    {max_speed}km/h", 2)
 
                 await asyncio.sleep(0.05)
 
