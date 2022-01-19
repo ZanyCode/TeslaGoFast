@@ -9,3 +9,5 @@ recording
 training
 evalutaion/misc
 config.json
+data
+data_small

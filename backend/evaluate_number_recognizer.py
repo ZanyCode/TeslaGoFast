@@ -18,7 +18,7 @@ def get_class_name(class_indices, label):
 def evaluate_visually(data_dir):
     eval_datset = get_number_dataset_validation(data_dir, subset=None)
     images, actual_labels = next(eval_datset)
-    model = get_number_model()
+    model = get_number_model(len(eval_datset.class_indices))
     model.load_weights(checkpoint_filepath)
 
     for image, actual_onehot_label in zip(images, actual_labels):
@@ -60,6 +60,6 @@ def evaluate_with_dataset(dataset_dir, model_path):
 
 
 if __name__ == '__main__':
-    evaluation_data_dir = join(DIR_BACKEND, 'training', 'merged')
+    evaluation_data_dir = join(DIR_BACKEND, 'data_small',)
     # evaluate_with_dataset(evaluation_data_dir, checkpoint_filepath)
     evaluate_visually(evaluation_data_dir)

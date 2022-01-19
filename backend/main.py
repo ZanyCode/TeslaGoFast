@@ -1,4 +1,5 @@
 import json
+from operator import is_
 import os
 import sys
 
@@ -17,7 +18,6 @@ from os.path import abspath, join, dirname
 from pydantic import BaseModel
 import asyncio
 import uuid
-import drivers
 from tflite_runtime.interpreter import load_delegate, Interpreter
 
 
@@ -33,6 +33,15 @@ def main():
     import mimetypes
     mimetypes.init()
     mimetypes.add_type('application/javascript', '.js')
+
+    is_linux = sys.platform.startswith("linux")
+    if is_linux:
+        import drivers
+        display = drivers.Lcd()
+
+    def write_lcd(txt, line):
+        if is_linux:
+            display.lcd_display_string(txt, line)     
 
     DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
     DIR_STATIC_FILES = abspath(join(DIR_BACKEND, "..", "frontend", "dist", "teslagofast"))
@@ -55,7 +64,6 @@ def main():
 
     camera = cv2.VideoCapture(0)
     app = FastAPI()
-    display = drivers.Lcd()
 
     prev_current_speed = 0
     prev_max_speed = 0
@@ -64,7 +72,7 @@ def main():
     async def run_detector():
         # loop = asyncio.get_event_loop()
         # interpreter = tf.lite.Interpreter(join(DIR_BACKEND, 'tgf_quant.tflite'))
-        library = 'libedgetpu.so.1' if sys.platform.startswith("linux") else 'edgetpu.dll'
+        library = 'libedgetpu.so.1' if is_linux else 'edgetpu.dll'
         # model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
         # interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
         # interpreter.allocate_tensors()
@@ -97,7 +105,7 @@ def main():
 
             while(True):
                 success, image = camera.read()
-                # image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
+                image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
                 if success:
                     image_full = cv2.rotate(image, cv2.ROTATE_180)   
                     image_current_speed = image_full[current_speed_box[1]: current_speed_box[3], current_speed_box[0]:current_speed_box[2]]
@@ -117,10 +125,12 @@ def main():
                         # Write to display
                         if prev_current_speed != current_speed:
                             prev_current_speed = current_speed
-                            display.lcd_display_string(f"Current: {current_speed}km/h", 1)
+                            write_lcd(f"Current: {current_speed}km/h", 1)   
+                            print(f"Current Speed: {current_speed} km/h")
                         if prev_max_speed != max_speed:
                             prev_max_speed = max_speed
-                            display.lcd_display_string(f"Max:    {max_speed}km/h", 2)
+                            write_lcd(f"Max:    {max_speed}km/h", 2)
+                            print(f"Max Speed: {max_speed} km/h")
 
                 await asyncio.sleep(0.05)
 
@@ -228,15 +238,28 @@ def estimate_speed(interpreter, bgr_image):
         return top_1
 
     def prep_image(bgr_image):
-        b, g, r = bgr_image[:,:,0], bgr_image[:,:,1], bgr_image[:,:,2]
-        gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-        img = np.repeat(np.expand_dims(gray, -1), 3, -1)    
-        img = img.astype(np.float32) / 255.0
-        img = (img - 0.5) * 2
+        rgb = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+        # rgb /= 127.5
+        # rgb -= 1.
+        # return rgb
+        rgb = rgb.astype(np.float32) / 127.5
+        rgb = rgb - 1.
 
-        return img
+        return rgb
 
-    return classify_image(interpreter, prep_image(bgr_image)) + 20 # Labels start counting at 20km/h
+    class_indices = {
+        0: 30,
+        1: 33,
+        2: 50,
+        3: 55,
+        4: 70,
+        5: 73,
+        6: 100,
+        7: 103
+    }
+
+    idx = classify_image(interpreter, prep_image(bgr_image))
+    return class_indices[idx]
 
 def load_config(file) -> Coords:
     if os.path.exists(file):

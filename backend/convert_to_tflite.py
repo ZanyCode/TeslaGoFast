@@ -11,9 +11,9 @@ def main():
     DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
     # raw_model_path = join(DIR_BACKEND, 'checkpoint_numbers_finetuned')
     raw_model_path = join(DIR_BACKEND, 'checkpoint_numbers')
-    representative_dataset_dir = join(DIR_BACKEND, 'training', 'merged')
+    representative_dataset_dir = join(DIR_BACKEND, 'data_small')
     tflite_model_path = join(DIR_BACKEND, 'tgf_quant.tflite')
-    # save_as_tflite(raw_model_path, representative_dataset_dir, tflite_model_path)
+    save_as_tflite(raw_model_path, representative_dataset_dir, tflite_model_path)
     compare_models(raw_model_path, tflite_model_path, representative_dataset_dir)
 
 
@@ -22,11 +22,11 @@ def get_class_name(class_indices, label):
 
 
 def save_as_tflite(checkpoint_filepath, representative_dataset_dir, output_filename):
-    model = get_number_model()
-    model.load_weights(checkpoint_filepath)
-    # representative_dataset = get_number_dataset_validation(representative_dataset_dir)
     batch_size = 100
     representative_dataset = get_number_dataset_validation(representative_dataset_dir, batch_size=batch_size)
+    model = get_number_model(len(representative_dataset.class_indices))
+    model.load_weights(checkpoint_filepath)
+    # representative_dataset = get_number_dataset_validation(representative_dataset_dir)
     batch_images, batch_labels = next(representative_dataset)
 
     # A generator that provides a representative dataset
@@ -100,7 +100,7 @@ def compare_models(raw_model_path, tflite_model_path, eval_dataset_path):
     print("Quant TF Lite accuracy: {:.3%}".format(tflite_accuracy.result()))
 
     # Raw Model
-    model = get_number_model()
+    model = get_number_model(len(eval_datset.class_indices))
     model.load_weights(raw_model_path)
     logits = model(batch_images)
     prediction = np.argmax(logits, axis=1)
