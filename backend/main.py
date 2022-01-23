@@ -209,8 +209,8 @@ def main():
 
     @app.post("/api/git_update")
     def update():
-        frontend_dir = join(DIR_BACKEND, '..', )
-        stream = os.popen(f'git fetch && git pull')
+        repo_base_dir = join(DIR_BACKEND, '..')
+        stream = os.popen(f'cd {repo_base_dir} && git fetch && git pull')
         print(stream.read())
 
     @app.post("/api/build_frontend")
@@ -221,7 +221,7 @@ def main():
 
     @app.post("/api/reboot")
     def reboot():
-        stream = os.popen('sudo reboot')
+        stream = os.popen('sudo service teslagofast restart')
         print(stream.read())
 
 
