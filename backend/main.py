@@ -130,6 +130,7 @@ def main():
                         last_fps_update = current_time
                         write_lcd(f"{frame_count} FpS", 2)
                         print(f"{frame_count} FpS")
+                        frame_count = 0
 
                     frame_count += 1
 
