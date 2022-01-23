@@ -2,6 +2,7 @@ import json
 from operator import is_
 import os
 import sys
+import time
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2" # third gpu
 from typing import Sequence
@@ -41,7 +42,7 @@ def main():
 
     def write_lcd(txt, line):
         if is_linux:
-            display.lcd_display_string(txt, line)     
+            display.lcd_display_string(txt, line)            
 
     DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
     DIR_STATIC_FILES = abspath(join(DIR_BACKEND, "..", "frontend", "dist", "teslagofast"))
@@ -70,12 +71,8 @@ def main():
 
     @app.on_event("startup")
     async def run_detector():
-        # loop = asyncio.get_event_loop()
-        # interpreter = tf.lite.Interpreter(join(DIR_BACKEND, 'tgf_quant.tflite'))
         library = 'libedgetpu.so.1' if is_linux else 'edgetpu.dll'
-        # model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
-        # interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
-        # interpreter.allocate_tensors()
+
         try:
             model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
             interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
@@ -86,8 +83,6 @@ def main():
             interpreter = Interpreter(model)
             interpreter.allocate_tensors()
             print('Using default model')
-        # interpreter = tf.lite.Interpreter(join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite'))
-        # interpreter.allocate_tensors()
 
         async def get_run_task():
             nonlocal image_full, image_current_speed, image_max_speed, prev_max_speed, prev_current_speed
@@ -102,6 +97,8 @@ def main():
                 os.makedirs(base_path_max_speed_images)
                 
             recording_sequence_idx = 0
+            frame_count = 0
+            last_fps_update = time.time()
 
             while(True):
                 success, image = camera.read()
@@ -123,14 +120,18 @@ def main():
                     max_speed = estimate_speed(interpreter, image_max_speed)
 
                     # Write to display
-                    if prev_current_speed != current_speed:
+                    if prev_current_speed != current_speed or prev_max_speed != max_speed:
                         prev_current_speed = current_speed
-                        write_lcd(f"Current: {current_speed}km/h", 1)   
-                        # print(f"Current Speed: {current_speed} km/h")
-                    if prev_max_speed != max_speed:
-                        prev_max_speed = max_speed
-                        write_lcd(f"Max:    {max_speed}km/h", 2)
-                        # print(f"Max Speed: {max_speed} km/h")
+                        write_lcd(f"{current_speed}km/h, {max_speed}km/h", 1)   
+                    
+                    # Print fps count
+                    current_time = time.time()
+                    if (current_time - last_fps_update) > 1:
+                        last_fps_update = current_time
+                        write_lcd(f"{frame_count} FpS", 2)
+                        print(f"{frame_count} FpS")
+
+                    frame_count += 1
 
                 await asyncio.sleep(0.05)
 
