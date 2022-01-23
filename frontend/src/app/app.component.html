@@ -22,6 +22,10 @@
 <button (click)="startRecording()" style="height: 50px;">Start Recording</button>
 <button (click)="stopRecording()" style="height: 50px;">Stop Recording</button>
 <br>
+<button (click)="update()" [disabled]="isUpdating" style="height: 50px;">Update</button>
+<button (click)="buildFrontend()" [disabled]="isBuilding" style="height: 50px;">Build Frontend</button>
+<button (click)="reboot()" style="height: 50px;">Reboot</button>
+<br>
 IsRecording: {{isRecording}}
 <br>
 <img (click)="reloadSpeedImage()" [src]="speedImage" alt="Place image title">

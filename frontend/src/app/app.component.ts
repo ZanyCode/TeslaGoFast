@@ -22,6 +22,8 @@ export class AppComponent implements OnInit {
   max_speed_y = 0;
 
   isRecording = false;
+  isBuilding = false;
+  isUpdating = false;
 
   constructor(private http: HttpClient) {
 
@@ -68,6 +70,20 @@ export class AppComponent implements OnInit {
     this.http.put<boolean>(`${environment.api}/stop-recording`, {}).subscribe(isRecording => {
       this.isRecording = isRecording;
     })
+  }
+
+  update(): void {
+    this.isUpdating = true;
+    this.http.post(`${environment.api}/git_update`, {}).subscribe(() => (this.isUpdating = false));
+  }
+
+  buildFrontend(): void {
+    this.isBuilding = true;
+    this.http.post(`${environment.api}/build_frontend`, {}).subscribe(() => (this.isBuilding = false));
+  }
+
+  reboot(): void {
+    this.http.post(`${environment.api}/reboot`, {}).subscribe();
   }
 
   reloadImage(): void {

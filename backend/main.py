@@ -110,7 +110,6 @@ def main():
                     image_full = cv2.rotate(image, cv2.ROTATE_180)   
                     image_current_speed = image_full[current_speed_box[1]: current_speed_box[3], current_speed_box[0]:current_speed_box[2]]
                     image_max_speed = image_full[max_speed_box[1]: max_speed_box[3], max_speed_box[0]:max_speed_box[2]]                    
-                    current_speed = estimate_speed(interpreter, image_current_speed)                  
 
                     if record_images:
                         im_path_current_speed = join(DIR_BACKEND, 'recording', session_id, 'current_speed', f"{session_id}_{str(recording_sequence_idx).zfill(6)}.png")
@@ -119,18 +118,19 @@ def main():
                         im_path_max_speed = join(DIR_BACKEND, 'recording', session_id, 'max_speed', f"{session_id}_{str(recording_sequence_idx).zfill(6)}.png")
                         cv2.imwrite(im_path_max_speed, image_max_speed)
                         recording_sequence_idx += 1
-                    else:
-                        max_speed = estimate_speed(interpreter, image_max_speed)
 
-                        # Write to display
-                        if prev_current_speed != current_speed:
-                            prev_current_speed = current_speed
-                            write_lcd(f"Current: {current_speed}km/h", 1)   
-                            print(f"Current Speed: {current_speed} km/h")
-                        if prev_max_speed != max_speed:
-                            prev_max_speed = max_speed
-                            write_lcd(f"Max:    {max_speed}km/h", 2)
-                            print(f"Max Speed: {max_speed} km/h")
+                    current_speed = estimate_speed(interpreter, image_current_speed)
+                    max_speed = estimate_speed(interpreter, image_max_speed)
+
+                    # Write to display
+                    if prev_current_speed != current_speed:
+                        prev_current_speed = current_speed
+                        write_lcd(f"Current: {current_speed}km/h", 1)   
+                        # print(f"Current Speed: {current_speed} km/h")
+                    if prev_max_speed != max_speed:
+                        prev_max_speed = max_speed
+                        write_lcd(f"Max:    {max_speed}km/h", 2)
+                        # print(f"Max Speed: {max_speed} km/h")
 
                 await asyncio.sleep(0.05)
 
@@ -206,6 +206,24 @@ def main():
         nonlocal record_images
         return JSONResponse(record_images)
 
+    @app.post("/api/git_update")
+    def update():
+        frontend_dir = join(DIR_BACKEND, '..', )
+        stream = os.popen(f'git fetch && git pull')
+        print(stream.read())
+
+    @app.post("/api/build_frontend")
+    def build_frontend():
+        frontend_dir = join(DIR_BACKEND, '..', 'frontend')
+        stream = os.popen(f'cd {frontend_dir} && npx ng b')
+        print(stream.read())
+
+    @app.post("/api/reboot")
+    def reboot():
+        stream = os.popen('sudo reboot')
+        print(stream.read())
+
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
     del(camera)
 
@@ -251,7 +269,7 @@ def estimate_speed(interpreter, bgr_image):
         0: 30,
         1: 33,
         2: 50,
-        3: 55,
+        3: 53,
         4: 70,
         5: 73,
         6: 100,
