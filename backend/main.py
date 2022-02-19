@@ -230,43 +230,43 @@ def main():
     del(camera)
 
 
+def set_input_tensor(interpreter, img):      
+    input_details = interpreter.get_input_details()[0]
+    tensor_index = input_details['index']
+    input_tensor = interpreter.tensor(tensor_index)()[0]
+    # Inputs for the TFLite model must be uint8, so we quantize our input data.
+    # NOTE: This step is necessary only because we're receiving input data from
+    # ImageDataGenerator, which rescaled all image data to float [0,1]. When using
+    # bitmap inputs, they're already uint8 [0,255] so this can be replaced with:
+    #   input_tensor[:, :] = input
+    scale, zero_point = input_details['quantization']
+    input_tensor[:, :] = np.uint8(img / scale + zero_point)
+    # input_tensor[:, :] = np.uint8(input + 1.0 / 127.5)
+    # input_tensor[:, :] = input
+
+
+def classify_image(interpreter, input):
+    set_input_tensor(interpreter, input)
+    interpreter.invoke()
+    output_details = interpreter.get_output_details()[0]
+    output = interpreter.get_tensor(output_details['index'])
+    # Outputs from the TFLite model are uint8, so we dequantize the results:
+    scale, zero_point = output_details['quantization']
+    output = scale * (output - zero_point)
+    top_1 = np.argmax(output)
+    return top_1
+
+
+def prep_image(bgr_image):
+    rgb = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+    # rgb /= 127.5
+    # rgb -= 1.
+    # return rgb
+    rgb = rgb.astype(np.float32) / 127.5
+    rgb = rgb - 1.
+    return rgb
+
 def estimate_speed(interpreter, bgr_image):      
-    # Quantized Tflite model
-    def set_input_tensor(interpreter, img):      
-        input_details = interpreter.get_input_details()[0]
-        tensor_index = input_details['index']
-        input_tensor = interpreter.tensor(tensor_index)()[0]
-        # Inputs for the TFLite model must be uint8, so we quantize our input data.
-        # NOTE: This step is necessary only because we're receiving input data from
-        # ImageDataGenerator, which rescaled all image data to float [0,1]. When using
-        # bitmap inputs, they're already uint8 [0,255] so this can be replaced with:
-        #   input_tensor[:, :] = input
-        scale, zero_point = input_details['quantization']
-        input_tensor[:, :] = np.uint8(img / scale + zero_point)
-        # input_tensor[:, :] = np.uint8(input + 1.0 / 127.5)
-        # input_tensor[:, :] = input
-
-    def classify_image(interpreter, input):
-        set_input_tensor(interpreter, input)
-        interpreter.invoke()
-        output_details = interpreter.get_output_details()[0]
-        output = interpreter.get_tensor(output_details['index'])
-        # Outputs from the TFLite model are uint8, so we dequantize the results:
-        scale, zero_point = output_details['quantization']
-        output = scale * (output - zero_point)
-        top_1 = np.argmax(output)
-        return top_1
-
-    def prep_image(bgr_image):
-        rgb = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
-        # rgb /= 127.5
-        # rgb -= 1.
-        # return rgb
-        rgb = rgb.astype(np.float32) / 127.5
-        rgb = rgb - 1.
-
-        return rgb
-
     class_indices = {
         0: 30,
         1: 33,
