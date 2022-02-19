@@ -48,19 +48,9 @@ class Detector:
             import drivers
             self.display = drivers.Lcd()
 
-    async def run(self):
-        library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'
+        self.interpreter = self.get_interpreter()
 
-        try:
-            model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
-            interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
-            interpreter.allocate_tensors()
-            print('Using edgetpu')
-        except:
-            model = join(DIR_BACKEND, 'tgf_quant.tflite')
-            interpreter = Interpreter(model)
-            interpreter.allocate_tensors()
-            print('Using default model')
+    async def run(self):       
 
         async def get_run_task():
             # session_id = str(uuid.uuid4())
@@ -78,6 +68,15 @@ class Detector:
             last_fps_update = time.time()
 
             while(True):
+                # full_image = self.capture_image(self.camera)
+                # speed_limit_image = self.extract_image_section(full_image, self.max_speed_box)
+                # current_speed_image = self.extract_image_sectin(full_image, self.current_speed_box)
+                # speed_limit = self.estimate_speed(self.interpreter, speed_limit_image)
+                # current_speed = self.estimate_speed(self.interpreter, current_speed_image)
+                # self.update_display(speed_limit, current_speed)
+                # self.save_snapshot(speed_limit_image, speed_limit, current_speed_image, current_speed)                        
+
+
                 success, image = self.camera.read()
                 image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
                 if success:
@@ -93,8 +92,8 @@ class Detector:
                         cv2.imwrite(im_path_max_speed, self.image_max_speed)
                         recording_sequence_idx += 1
 
-                    self.current_speed = self.estimate_speed(interpreter, self.image_current_speed)
-                    self.max_speed = self.estimate_speed(interpreter, self.image_max_speed)
+                    self.current_speed = self.estimate_speed(self.interpreter, self.image_current_speed)
+                    self.max_speed = self.estimate_speed(self.interpreter, self.image_max_speed)
 
                     # Write to display
                     if self.prev_current_speed != self.current_speed or self.prev_max_speed != self.max_speed:
@@ -114,6 +113,22 @@ class Detector:
                 await asyncio.sleep(0.05)
 
         asyncio.create_task(get_run_task())
+
+    def get_interpreter(self):
+        library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'
+
+        try:
+            model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
+            interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
+            interpreter.allocate_tensors()
+            print('Using edgetpu')
+            return interpreter
+        except:
+            model = join(DIR_BACKEND, 'tgf_quant.tflite')
+            interpreter = Interpreter(model)
+            interpreter.allocate_tensors()
+            print('Using default model')
+            return interpreter
 
     def load_config(self, file) -> Coords:
         if os.path.exists(file):
