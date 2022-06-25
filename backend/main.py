@@ -60,7 +60,7 @@ def main():
         # camera.open(-1)
         # return_value, image = camera.read()
         cv2.rectangle(temp_frame, detector.current_speed_box[0:2], detector.current_speed_box[2:4], (0, 255, 0))
-        cv2.rectangle(temp_frame, detector.max_speed_box[0:2], detector.max_speed_box[2:4], (0, 255, 0))
+        cv2.rectangle(temp_frame, detector.speed_limit_box[0:2], detector.speed_limit_box[2:4], (0, 255, 0))
         res, im_png = cv2.imencode(".png", temp_frame)
         return StreamingResponse(io.BytesIO(im_png.tobytes()), media_type="image/png")    
 
@@ -76,13 +76,13 @@ def main():
 
     @app.get("/api/coords")
     async def get_coords():
-       return JSONResponse((*detector.current_speed_box[0:2], *detector.max_speed_box[0:2]))
+       return JSONResponse((*detector.current_speed_box[0:2], *detector.speed_limit_box[0:2]))
 
     @app.post("/api/save")
     async def save(coords: Coords):
         save_config(FILE_CONFIG, coords)
         detector.current_speed_box = (coords.current_x, coords.current_y, coords.current_x + detector.current_speed_dims[0], coords.current_y + detector.current_speed_dims[1])
-        detector.max_speed_box = (coords.max_x, coords.max_y, coords.max_x + detector.max_speed_dims[0], coords.max_y + detector.max_speed_dims[1])
+        detector.speed_limit_box = (coords.max_x, coords.max_y, coords.max_x + detector.max_speed_dims[0], coords.max_y + detector.max_speed_dims[1])
 
     @app.get("/api/save")
     async def save_current_image():

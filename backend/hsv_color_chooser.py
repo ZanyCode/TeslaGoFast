@@ -5,12 +5,28 @@ from os.path import abspath, join, dirname
 
 DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
 
+def get_bounding_boxes(image):
+      # Set minimum and max HSV values to display
+    lower = np.array([0, 70, 0])
+    upper = np.array([179, 255, 255])
+
+    # Create HSV Image and threshold into a range.
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, lower, upper)
+    output = cv2.bitwise_and(image,image, mask= mask)
+    x1,y1,w,h = cv2.boundingRect(~mask)
+    x2 = x1+w
+    y2 = y1+h
+    colour = (255, 0, 0)
+    thickness = 1
+    cv2.rectangle(image, (x1, y1), (x2, y2), colour, thickness)
 
 def nothing(x):
     pass
 
 # Load in image
-image = cv2.imread(join(DIR_BACKEND, 'images', '2021-12-21_10-04-10$m_50_53.png'))
+image = cv2.imread(join(DIR_BACKEND, 'data_small', '030', '2022-01-17_19-31-59_002299.png'))
+image = cv2.imread(join(DIR_BACKEND, 'data_small', '053', '2cb79c68-dc8e-4e72-95d2-840c5cb9c731_000467.png'))
 
 # Create a window
 cv2.namedWindow('image')
@@ -55,6 +71,10 @@ while(1):
     mask = cv2.inRange(hsv, lower, upper)
     output = cv2.bitwise_and(image,image, mask= mask)
 
+    larger_mat = np.zeros((1200, 1200, 3), np.uint8)
+    # get_bounding_boxes(image)
+    larger_mat[0:mask.shape[0], 0:mask.shape[1]] = output
+
     # Print if there is a change in HSV value
     if( (phMin != hMin) | (psMin != sMin) | (pvMin != vMin) | (phMax != hMax) | (psMax != sMax) | (pvMax != vMax) ):
         print("(hMin = %d , sMin = %d, vMin = %d), (hMax = %d , sMax = %d, vMax = %d)" % (hMin , sMin , vMin, hMax, sMax , vMax))
@@ -66,10 +86,11 @@ while(1):
         pvMax = vMax
 
     # Display output image
-    cv2.imshow('image',mask)
+    cv2.imshow('image',larger_mat)
 
     # Wait longer to prevent freeze for videos.
     if cv2.waitKey(wait_time) & 0xFF == ord('q'):
         break
 
 cv2.destroyAllWindows()
+
