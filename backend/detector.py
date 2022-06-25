@@ -1,9 +1,10 @@
 import json
 from operator import is_
 import os
+from random import random
 import sys
 import time
-
+import random
 from common import Coords
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2" # third gpu
@@ -52,32 +53,22 @@ class Detector:
 
         self.interpreter = self.get_interpreter()
 
+        self.session_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")      
+            
+        self.recording_sequence_idx = 0
+        self.frame_count = 0
+        self.last_fps_update = time.time()
+
     async def run(self):       
         async def get_run_task():
-            # session_id = str(uuid.uuid4())
-            session_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            base_path_current_speed_images = join(DIR_BACKEND, 'recording', session_id, 'current_speed')
-            base_path_max_speed_images = join(DIR_BACKEND, 'recording', session_id, 'max_speed')
-            if not os.path.exists(base_path_current_speed_images):
-                os.makedirs(base_path_current_speed_images)
-
-            if not os.path.exists(base_path_max_speed_images):
-                os.makedirs(base_path_max_speed_images)
-                
-            self.recording_sequence_idx = 0
-            self.frame_count = 0
-            self.last_fps_update = time.time()
-
             while(True):
                 self.image_full = self.capture_image(False)
-                self.image_speed_limit = self.extract_image_section(self.image_full, self.speed_limit_box)
-                self.image_current_speed = self.extract_image_section(self.image_full, self.current_speed_box)
+                self.image_speed_limit = self.extract_image_section(self.image_full, self.speed_limit_box, 22)
+                self.image_current_speed = self.extract_image_section(self.image_full, self.current_speed_box, 22)
                 speed_limit = self.estimate_speed(self.image_speed_limit)
                 current_speed = self.estimate_speed(self.image_current_speed)
                 self.update_display(speed_limit, current_speed)
-                # self.save_snapshot(speed_limit_image, speed_limit, current_speed_image, current_speed)                        
-                print(f"{current_speed}, {speed_limit}")
-
+                self.save_snapshot(self.image_speed_limit, speed_limit, self.image_current_speed, current_speed)                        
 
                 # success, image = self.camera.read()
                 # image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
@@ -117,14 +108,15 @@ class Detector:
         asyncio.create_task(get_run_task())
 
     def capture_image(self, use_dummy=False):
-        success, image = self.camera.read() if not use_dummy else True,cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
+        success, image = self.camera.read() if not use_dummy else (True,cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png')),)
         if success:
             return cv2.rotate(image, cv2.ROTATE_180)
         
         raise 'Error recording image'
 
-    def extract_image_section(self, image, box):
-        return image[box[1]: box[3], box[0]:box[2]]
+    def extract_image_section(self, image, box, random_shift=None):
+        x_rnd,y_rnd = (0,0,) if not random_shift else (random.randint(-random_shift, random_shift), random.randint(-random_shift, random_shift),)
+        return image[box[1] + x_rnd : box[3] + x_rnd, box[0] + y_rnd :box[2] + y_rnd]
     
     def get_interpreter(self):
         library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'
@@ -168,6 +160,36 @@ class Detector:
     def write_lcd(self, txt, line):
         if self.is_linux:
             self.display.lcd_display_string(txt, line)   
+
+    def save_snapshot(self, image_speed_limit, speed_limit, image_current_speed, current_speed):
+        if self.record_images:
+            im_path_current_speed = join(
+                DIR_BACKEND, 
+                'recording', 
+                self.session_id, 
+                'current_speed', 
+                f"{str(current_speed).zfill(3)}",  
+                f"{self.session_id}_{str(self.recording_sequence_idx).zfill(6)}.png")
+
+            if not os.path.exists(os.path.dirname(im_path_current_speed)):
+                os.makedirs(os.path.dirname(im_path_current_speed))
+
+            cv2.imwrite(im_path_current_speed, image_current_speed)
+            self.recording_sequence_idx += 1
+
+            im_path_speed_limit = join(
+                DIR_BACKEND,
+                'recording', 
+                self.session_id,
+                'speed_limit',
+                f"{str(speed_limit).zfill(3)}",  
+                f"{self.session_id}_{str(self.recording_sequence_idx).zfill(6)}.png")
+
+            if not os.path.exists(os.path.dirname(im_path_speed_limit)):
+                os.makedirs(os.path.dirname(im_path_speed_limit))
+
+            cv2.imwrite(im_path_speed_limit, image_speed_limit)
+            self.recording_sequence_idx += 1
 
     def estimate_speed(self, bgr_image):      
         class_indices = {
