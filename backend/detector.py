@@ -40,7 +40,7 @@ class Detector:
 
         self.current_speed_dims = (128, 128)
         self.max_speed_dims = (128, 128)
-        self.record_images = False
+        self.record_images = True
 
         self.current_speed_box_xy = (config.current_x, config.current_y)
         self.current_speed_box = (*self.current_speed_box_xy, self.current_speed_box_xy[0] + self.current_speed_dims[0], self.current_speed_box_xy[1] + self.current_speed_dims[1])
