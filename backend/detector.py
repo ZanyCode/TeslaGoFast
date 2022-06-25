@@ -29,7 +29,7 @@ FILE_CONFIG = join(DIR_BACKEND, 'config.json')
 class Detector:
     def __init__(self) -> None:
         self.is_linux = sys.platform.startswith("linux")
-        self.image_full, self.image_current_speed, self.image_max_speed, self.prev_speed_limit, self.prev_current_speed = \
+        self.image_full, self.image_current_speed, self.image_speed_limit, self.prev_speed_limit, self.prev_current_speed = \
             None, None, None, 0, 0
         self.frame_count = 0
         self.recording_sequence_idx = 0
@@ -69,11 +69,11 @@ class Detector:
             self.last_fps_update = time.time()
 
             while(True):
-                full_image = self.capture_image(False)
-                speed_limit_image = self.extract_image_section(full_image, self.speed_limit_box)
-                current_speed_image = self.extract_image_section(full_image, self.current_speed_box)
-                speed_limit = self.estimate_speed(speed_limit_image)
-                current_speed = self.estimate_speed(current_speed_image)
+                self.image_full = self.capture_image(False)
+                self.image_speed_limit = self.extract_image_section(self.image_full, self.speed_limit_box)
+                self.image_current_speed = self.extract_image_section(self.image_full, self.current_speed_box)
+                speed_limit = self.estimate_speed(self.image_speed_limit)
+                current_speed = self.estimate_speed(self.image_current_speed)
                 self.update_display(speed_limit, current_speed)
                 # self.save_snapshot(speed_limit_image, speed_limit, current_speed_image, current_speed)                        
                 print(f"{current_speed}, {speed_limit}")

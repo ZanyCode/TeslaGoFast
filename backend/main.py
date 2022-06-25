@@ -71,7 +71,7 @@ def main():
 
     @app.get("/api/max-speed-image")
     async def get_speed_image():       
-        res, im_png = cv2.imencode(".png", detector.image_max_speed)
+        res, im_png = cv2.imencode(".png", detector.image_speed_limit)
         return StreamingResponse(io.BytesIO(im_png.tobytes()), media_type="image/png")    
 
     @app.get("/api/coords")
