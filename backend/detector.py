@@ -30,8 +30,8 @@ FILE_CONFIG = join(DIR_BACKEND, 'config.json')
 class Detector:
     def __init__(self) -> None:
         self.is_linux = sys.platform.startswith("linux")
-        self.image_full, self.image_current_speed, self.image_speed_limit, self.prev_speed_limit, self.prev_current_speed = \
-            None, None, None, 0, 0
+        self.image_full, self.image_current_speed, self.image_speed_limit = \
+            None, None, None
         self.frame_count = 0
         self.recording_sequence_idx = 0
         self.camera = cv2.VideoCapture(0)
@@ -50,6 +50,8 @@ class Detector:
         if self.is_linux:
             import drivers
             self.display = drivers.Lcd()
+        self.prev_display_line1 = ""
+        self.prev_display_line2 = ""
 
         self.interpreter = self.get_interpreter()
 
@@ -124,29 +126,31 @@ class Detector:
         c = Coords(current_x = 178, current_y = 247, max_x = 305, max_y = 240)
         return c
 
-    def update_display(self, is_ap_on, speed_limit=None, current_speed=None):
-        self.clear_lcd()
-
-        # Write to display
-        if is_ap_on and (self.prev_current_speed != current_speed or self.prev_speed_limit != speed_limit):
-            self.prev_current_speed = current_speed
-            self.prev_speed_limit = speed_limit
-            self.write_lcd(f"{current_speed}km/h, {speed_limit}km/h", 1)   
-        elif not is_ap_on:
-            self.write_lcd(f"No AP", 1)  
+    def update_display(self, is_ap_on, speed_limit=None, current_speed=None):        
+        line1 = f"{current_speed}km/h, {speed_limit}km/h" if is_ap_on else f"No AP"
 
         current_time = time.time()
-        if (current_time - self.last_fps_update) > 1:
+        if (current_time - self.last_fps_update) > 1:            
             self.last_fps_update = current_time
-            self.write_lcd(f"{self.frame_count} FpS", 2)
-            print(f"{self.frame_count} FpS")
+            line2 = f"{self.frame_count} FpS"
             self.frame_count = 0
-
+        else:
+            line2 = self.prev_display_line2
+        
+        if line1 != self.prev_display_line1  or line2 != self.prev_display_line2:
+            self.clear_lcd()
+            self.write_lcd(line1, 1)
+            self.write_lcd(line2, 2)
+        
+        self.prev_display_line1 = line1
+        self.prev_display_line2 = line2
         self.frame_count += 1
     
     def write_lcd(self, txt, line):
         if self.is_linux:
             self.display.lcd_display_string(txt, line)   
+        else:
+            print(txt)
 
     def clear_lcd(self):
         if self.is_linux:
