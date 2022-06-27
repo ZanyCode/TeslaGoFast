@@ -137,8 +137,9 @@ class Detector:
         else:
             line2 = self.prev_display_line2
         
-        if line1 != self.prev_display_line1  or line2 != self.prev_display_line2:
+        if line1 != self.prev_display_line1:
             self.write_lcd(line1, 1)
+        if line2 != self.prev_display_line2:
             self.write_lcd(line2, 2)
         
         self.prev_display_line1 = line1
