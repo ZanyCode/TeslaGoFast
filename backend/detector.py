@@ -127,18 +127,17 @@ class Detector:
         return c
 
     def update_display(self, is_ap_on, speed_limit=None, current_speed=None):        
-        line1 = f"{current_speed}km/h, {speed_limit}km/h" if is_ap_on else f"No AP"
+        line1 = f"{current_speed}km/h, {speed_limit}km/h".ljust(16) if is_ap_on else f"No AP".ljust(16)
 
         current_time = time.time()
         if (current_time - self.last_fps_update) > 1:            
             self.last_fps_update = current_time
-            line2 = f"{self.frame_count} FpS"
+            line2 = f"{self.frame_count} FpS".ljust(16)
             self.frame_count = 0
         else:
             line2 = self.prev_display_line2
         
         if line1 != self.prev_display_line1  or line2 != self.prev_display_line2:
-            self.clear_lcd()
             self.write_lcd(line1, 1)
             self.write_lcd(line2, 2)
         
