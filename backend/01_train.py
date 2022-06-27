@@ -22,8 +22,8 @@ def main():
     model_path = join(DIR_BACKEND, 'checkpoint_numbers2')
     model_path_finetuned = join(DIR_BACKEND, 'checkpoint_numbers_finetuned2')
     data_dir = join(DIR_BACKEND, 'data_small')
-    # train_model(data_dir, model_path)
-    finetune_model(model_path, data_dir, model_path_finetuned)
+    train_model(data_dir, model_path)
+    #finetune_model(model_path, data_dir, model_path_finetuned)
 
 
 def get_number_model(num_classes, trainable_layers=None, optimizer=tf.keras.optimizers.Adam(0.001)):

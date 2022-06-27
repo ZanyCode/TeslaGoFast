@@ -65,43 +65,15 @@ class Detector:
                 self.image_full = self.capture_image(False)
                 self.image_speed_limit = self.extract_image_section(self.image_full, self.speed_limit_box, 22)
                 self.image_current_speed = self.extract_image_section(self.image_full, self.current_speed_box, 22)
-                speed_limit = self.estimate_speed(self.image_speed_limit)
-                current_speed = self.estimate_speed(self.image_current_speed)
-                self.update_display(speed_limit, current_speed)
-                self.save_snapshot(self.image_speed_limit, speed_limit, self.image_current_speed, current_speed)                        
+                is_ap_on = self.is_ap_on(self.image_current_speed)
 
-                # success, image = self.camera.read()
-                # image = cv2.imread(join(DIR_BACKEND, '2021-12-29_09-41-01_snapshot.png'))
-                # if success:
-                #     self.image_full = cv2.rotate(image, cv2.ROTATE_180)   
-                #     self.image_current_speed = self.image_full[self.current_speed_box[1]: self.current_speed_box[3], self.current_speed_box[0]:self.current_speed_box[2]]
-                #     self.image_max_speed = self.image_full[self.speed_limit_box[1]: self.speed_limit_box[3], self.speed_limit_box[0]:self.speed_limit_box[2]]                    
-
-                #     if self.record_images:
-                #         im_path_current_speed = join(DIR_BACKEND, 'recording', session_id, 'current_speed', f"{session_id}_{str(recording_sequence_idx).zfill(6)}.png")
-                #         cv2.imwrite(im_path_current_speed, self.image_current_speed)
-                #         recording_sequence_idx += 1
-                #         im_path_max_speed = join(DIR_BACKEND, 'recording', session_id, 'max_speed', f"{session_id}_{str(recording_sequence_idx).zfill(6)}.png")
-                #         cv2.imwrite(im_path_max_speed, self.image_max_speed)
-                #         recording_sequence_idx += 1
-
-                #     self.current_speed = self.estimate_speed(self.image_current_speed)
-                #     self.max_speed = self.estimate_speed(self.image_max_speed)
-
-                #     # Write to display
-                #     if self.prev_current_speed != self.current_speed or self.prev_max_speed != self.max_speed:
-                #         self.prev_current_speed = self.current_speed
-                #         self.write_lcd(f"{self.current_speed}km/h, {self.max_speed}km/h", 1)   
-                    
-                #     # Print fps count
-                #     current_time = time.time()
-                #     if (current_time - last_fps_update) > 1:
-                #         last_fps_update = current_time
-                #         self.write_lcd(f"{frame_count} FpS", 2)
-                #         print(f"{frame_count} FpS")
-                #         frame_count = 0
-
-                #     frame_count += 1
+                if is_ap_on:
+                    speed_limit = self.estimate_speed(self.image_speed_limit)
+                    current_speed = self.estimate_speed(self.image_current_speed)
+                    self.save_snapshot(self.image_speed_limit, speed_limit, self.image_current_speed, current_speed)                        
+                    self.update_display(True, speed_limit, current_speed)
+                else:
+                    self.update_display(False)              
 
                 await asyncio.sleep(0.05)
 
@@ -118,6 +90,17 @@ class Detector:
         x_rnd,y_rnd = (0,0,) if not random_shift else (random.randint(-random_shift, random_shift), random.randint(-random_shift, random_shift),)
         return image[box[1] + x_rnd : box[3] + x_rnd, box[0] + y_rnd :box[2] + y_rnd]
     
+    def is_ap_on(self, img):
+        # Set minimum and max HSV values to display
+        lower = np.array([90, 0, 0])
+        upper = np.array([179, 255, 255])
+
+        # Create HSV Image and threshold into a range.
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, lower, upper)
+        detected_ap_pixels = np.sum(mask) / (mask.shape[0] * mask.shape[1])
+        return detected_ap_pixels > 8
+
     def get_interpreter(self):
         library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'
 
@@ -141,12 +124,16 @@ class Detector:
         c = Coords(current_x = 178, current_y = 247, max_x = 305, max_y = 240)
         return c
 
-    def update_display(self, speed_limit, current_speed):
+    def update_display(self, is_ap_on, speed_limit=None, current_speed=None):
+        self.clear_lcd()
+
         # Write to display
-        if self.prev_current_speed != current_speed or self.prev_speed_limit != speed_limit:
+        if is_ap_on and (self.prev_current_speed != current_speed or self.prev_speed_limit != speed_limit):
             self.prev_current_speed = current_speed
             self.prev_speed_limit = speed_limit
             self.write_lcd(f"{current_speed}km/h, {speed_limit}km/h", 1)   
+        elif not is_ap_on:
+            self.write_lcd(f"No AP", 1)  
 
         current_time = time.time()
         if (current_time - self.last_fps_update) > 1:
@@ -160,6 +147,10 @@ class Detector:
     def write_lcd(self, txt, line):
         if self.is_linux:
             self.display.lcd_display_string(txt, line)   
+
+    def clear_lcd(self):
+        if self.is_linux:
+            self.display.lcd_clear()  
 
     def save_snapshot(self, image_speed_limit, speed_limit, image_current_speed, current_speed):
         if self.record_images:

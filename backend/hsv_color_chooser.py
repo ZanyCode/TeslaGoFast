@@ -26,7 +26,10 @@ def nothing(x):
 
 # Load in image
 image = cv2.imread(join(DIR_BACKEND, 'data_small', '030', '2022-01-17_19-31-59_002299.png'))
-image = cv2.imread(join(DIR_BACKEND, 'data_small', '053', '2cb79c68-dc8e-4e72-95d2-840c5cb9c731_000467.png'))
+# image = cv2.imread(join(DIR_BACKEND, 'data_small', '053', '2cb79c68-dc8e-4e72-95d2-840c5cb9c731_000467.png')) # ap on
+# image = cv2.imread(join(DIR_BACKEND, 'data_small', '053', '2022-01-18_09-52-55_025982.png')) # ap off, slightly blue
+# image = cv2.imread(join(DIR_BACKEND, 'data_small', '053', '2022-01-17_19-31-59_012314.png')) # ap on, night mode
+image = cv2.imread(join(DIR_BACKEND, 'data_small', '053', '2022-01-17_19-31-59_015946.png')) # ap off, night mode
 
 # Create a window
 cv2.namedWindow('image')
@@ -69,11 +72,16 @@ while(1):
     # Create HSV Image and threshold into a range.
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, lower, upper)
-    output = cv2.bitwise_and(image,image, mask= mask)
 
-    larger_mat = np.zeros((1200, 1200, 3), np.uint8)
+    print(is_ap_on(image))
+    # output = cv2.bitwise_and(image,image, mask= mask)
+
     # get_bounding_boxes(image)
+    larger_mat = np.zeros((1200, 1200, 3), np.uint8)
     larger_mat[0:mask.shape[0], 0:mask.shape[1]] = output
+
+    # larger_mat = np.zeros((1200, 1200), np.uint8)
+    # larger_mat[0:mask.shape[0], 0:mask.shape[1]] = mask
 
     # Print if there is a change in HSV value
     if( (phMin != hMin) | (psMin != sMin) | (pvMin != vMin) | (phMax != hMax) | (psMax != sMax) | (pvMax != vMax) ):
