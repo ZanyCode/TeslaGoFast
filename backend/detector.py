@@ -75,7 +75,9 @@ class Detector:
                     self.save_snapshot(self.image_speed_limit, speed_limit, self.image_current_speed, current_speed)                        
                     self.update_display(True, speed_limit, current_speed)
                 else:
-                    self.update_display(False)              
+                    self.update_display(False)   
+                    self.save_snapshot(self.image_speed_limit, 42, self.image_current_speed, 43)                        
+
 
                 await asyncio.sleep(0.05)
 
@@ -94,14 +96,14 @@ class Detector:
     
     def is_ap_on(self, img):
         # Set minimum and max HSV values to display
-        lower = np.array([90, 0, 0])
+        lower = np.array([80, 0, 0])
         upper = np.array([179, 255, 255])
 
         # Create HSV Image and threshold into a range.
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower, upper)
         detected_ap_pixels = np.sum(mask) / (mask.shape[0] * mask.shape[1])
-        return detected_ap_pixels > 8
+        return detected_ap_pixels > 5
 
     def get_interpreter(self):
         library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'
