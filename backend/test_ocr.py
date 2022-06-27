@@ -10,6 +10,8 @@ import unittest
 from typing import List, NamedTuple, Tuple
 from enum import Enum
 
+from tqdm import tqdm
+
 DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
 
 class DriveMode(Enum):
@@ -109,6 +111,37 @@ class TestOCR(unittest.TestCase):
             self.assertEqual(actual_info.drive_mode, expected_info.drive_mode, f'Drive mode incorrect for file {f}')  
             self.assertEqual(actual_info.drive_speed, expected_info.drive_speed, f'Drive speed incorrect for file {f}')  
             self.assertEqual(actual_info.speed_limit, expected_info.speed_limit, f'Speed Limit incorrect for file {f}')  
+
+    def test_ap_detection(self):
+        ap_inactive_image_names = [join(DIR_BACKEND, "data_ap", "0", f) for f in listdir(join(DIR_BACKEND, "data_ap", "0")) if isfile(join(DIR_BACKEND, "data_ap", "0", f))]
+        ap_active_image_names = [join(DIR_BACKEND, "data_ap", "1", f) for f in listdir(join(DIR_BACKEND, "data_ap", "1")) if isfile(join(DIR_BACKEND, "data_ap", "1", f))]
+       
+        ap_inactive_images = [cv2.imread(name) for name in tqdm(ap_inactive_image_names)]
+        ap_active_images = [cv2.imread(name) for name in tqdm(ap_active_image_names)]
+       
+        ap_inactive_hsv = [cv2.cvtColor(img, cv2.COLOR_BGR2HSV) for img in tqdm(ap_inactive_images)]
+        ap_active_hsv = [cv2.cvtColor(img, cv2.COLOR_BGR2HSV) for img in tqdm(ap_active_images)]
+       
+        def get_mask(hsv):
+            lower = np.array([90, 0, 0])
+            upper = np.array([179, 255, 255])
+            mask = cv2.inRange(hsv, lower, upper)
+            return mask
+
+        ap_inactive_h = [np.mean(get_mask(img)) for img in ap_inactive_hsv]
+        ap_active_h = [np.mean(get_mask(img)) for img in ap_active_hsv]
+
+        fig7, ax7 = plt.subplots()
+        ax7.set_title('Inactive')
+        ax7.hist(ap_inactive_h, 500)
+
+        fig8, ax8 = plt.subplots()
+        ax8.set_title('Active')
+        ax8.hist(ap_active_h, 500)
+
+        plt.show()
+       
+        print(len(ap_inactive_images))
 
 if __name__ == '__main__':
     unittest.main()
