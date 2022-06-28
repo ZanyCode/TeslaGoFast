@@ -4,7 +4,7 @@ import os
 import sys
 import time
 
-from common import Coords
+from common import Coords, read_config
 from detector import Detector
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2" # third gpu
@@ -129,8 +129,13 @@ def main():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 def save_config(file, config: Coords):
-    with open(file, 'w') as outfile:
-        json.dump(config.dict(), outfile)    
+    current_config = read_config(file)
+    current_config.current_x = config.current_x
+    current_config.current_y = config.current_y
+    current_config.max_x = config.max_x
+    current_config.max_y = config.max_y
+
+    save_config(file, current_config)  
 
 
 if __name__ == "__main__":

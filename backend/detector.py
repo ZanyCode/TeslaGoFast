@@ -5,7 +5,7 @@ from random import random
 import sys
 import time
 import random
-from common import Coords
+from common import Coords, read_config
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2" # third gpu
 from typing import Sequence
@@ -37,13 +37,6 @@ def get_features_from_image(image):
     features = [np.mean(quadrant) for quadrant in quadrants]
     return np.array(features)
 
-def get_features_array(dir_path):
-    image_names = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
-    images = [cv2.imread(name) for name in tqdm(image_names)]
-    features = [get_features_from_image(img) for img in tqdm(images)]
-    return features
-
-
 class Detector:
     def __init__(self) -> None:
         self.is_linux = sys.platform.startswith("linux")
@@ -53,15 +46,15 @@ class Detector:
         self.recording_sequence_idx = 0
         self.camera = cv2.VideoCapture(0)
         self.current_speed, self.max_speed = 0, 0
-        config = self.load_config(FILE_CONFIG)
+        self.config = read_config(FILE_CONFIG)
 
         self.current_speed_dims = (128, 128)
         self.max_speed_dims = (128, 128)
         self.record_images = True
 
-        self.current_speed_box_xy = (config.current_x, config.current_y)
+        self.current_speed_box_xy = (self.config.current_x, self.config.current_y)
         self.current_speed_box = (*self.current_speed_box_xy, self.current_speed_box_xy[0] + self.current_speed_dims[0], self.current_speed_box_xy[1] + self.current_speed_dims[1])
-        self.max_speed_box_xy = (config.max_x, config.max_y)
+        self.max_speed_box_xy = (self.config.max_x, self.config.max_y)
         self.speed_limit_box = (*self.max_speed_box_xy, self.max_speed_box_xy[0] + self.max_speed_dims[0], self.max_speed_box_xy[1] + self.max_speed_dims[1])
 
         if self.is_linux:
@@ -77,7 +70,7 @@ class Detector:
         self.recording_sequence_idx = 0
         self.frame_count = 0
         self.last_fps_update = time.time()
-        self.ap_model = xgb.Booster(model_file=join(DIR_BACKEND, 'ap_model.xgb'))
+        self.ap_model = xgb.Booster(model_file=join(DIR_BACKEND, 'ap_model.xgb'))        
 
     async def run(self):       
         async def get_run_task():
@@ -142,13 +135,6 @@ class Detector:
             print('Using default model')
             return interpreter
 
-    def load_config(self, file) -> Coords:
-        if os.path.exists(file):
-            return Coords.parse_file(file)
-
-        c = Coords(current_x = 178, current_y = 247, max_x = 305, max_y = 240)
-        return c
-
     def update_display(self, is_ap_on, speed_limit=None, current_speed=None):        
         line1 = f"{current_speed}km/h, {speed_limit}km/h".ljust(16) if is_ap_on else f"No AP".ljust(16)
 
@@ -182,8 +168,7 @@ class Detector:
     def save_snapshot(self, image_speed_limit, speed_limit, image_current_speed, current_speed):
         if self.record_images:
             im_path_current_speed = join(
-                DIR_BACKEND, 
-                'recording', 
+                self.config.recording_path,
                 self.session_id, 
                 'current_speed', 
                 f"{str(current_speed).zfill(3)}",  

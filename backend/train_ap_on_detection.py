@@ -8,10 +8,16 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-from detector import get_features_array
+from detector import get_features_from_image
 
 
 DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
+
+def get_features_array(dir_path):
+    image_names = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
+    images = [cv2.imread(name) for name in tqdm(image_names)]
+    features = [get_features_from_image(img) for img in tqdm(images)]
+    return features
 
 def main():
     ap_inactive_base_path = join(DIR_BACKEND, 'data_ap', '0')
@@ -26,13 +32,17 @@ def main():
 
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dtest = xgb.DMatrix(X_test, label=y_test)
+    all_data = xgb.DMatrix(data, label=labels)
 
-    param = {'max_depth':2, 'eta':1, 'objective':'binary:logistic' }
+    param = {'max_depth':10, 'eta':1, 'objective':'binary:logistic' }
     num_round = 2
-    bst = xgb.train(param, dtrain, num_round)
+    # bst = xgb.train(param, all_data, num_round)
+    bst = xgb.Booster(model_file=join(DIR_BACKEND, 'ap_model.xgb'))   
 
-    preds = np.round(bst.predict(dtest)).astype(int)
-    print(f"Accuracy: {accuracy_score(y_test, preds)}, Got {np.sum(np.abs(preds - y_test) > 0)}/{len(y_test)} wrong predictions in the testset")
+    # preds = np.round(bst.predict(dtest)).astype(int)
+    # print(f"Accuracy: {accuracy_score(y_test, preds)}, Got {np.sum(np.abs(preds - y_test) > 0)}/{len(y_test)} wrong predictions in the testset")
+    preds = np.round(bst.predict(all_data, ntree_limit=bst.best_ntree_limit)).astype(int)
+    print(f"Accuracy: {accuracy_score(labels, preds)}, Got {np.sum(np.abs(preds - labels) > 0)}/{len(labels)} wrong predictions in the testset")
 
     bst.save_model(join(DIR_BACKEND, 'ap_model.xgb'))
 
