@@ -8,24 +8,10 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
+from detector import get_features_array
+
 
 DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
-
-def get_quadrants(arr):
-    quadrants = [M for SubA in np.split(arr,2, axis = 0) for M in np.split(SubA,2, axis = 1)]
-    return quadrants
-
-def get_features_from_image(image):
-    np_img = np.array(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))        
-    quadrants = [*get_quadrants(np_img[:, :, 0]), *get_quadrants(np_img[:, :, 1]), *get_quadrants(np_img[:, :, 2])]
-    features = [np.mean(quadrant) for quadrant in quadrants]
-    return np.array(features)
-
-def get_features_array(dir_path):
-    image_names = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
-    images = [cv2.imread(name) for name in tqdm(image_names)]
-    features = [get_features_from_image(img) for img in tqdm(images)]
-    return features
 
 def main():
     ap_inactive_base_path = join(DIR_BACKEND, 'data_ap', '0')
