@@ -3,6 +3,8 @@ from os.path import abspath, join, dirname
 import os
 
 from tensorflow._api.v2 import data
+
+from common import DIR_SIGN_DATA
 os.environ["CUDA_VISIBLE_DEVICES"]="0" # first gpu
 import random
 import numpy as np
@@ -19,11 +21,11 @@ from numpy.lib.utils import info
 
 def main():    
     DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
-    model_path = join(DIR_BACKEND, 'checkpoint_numbers')
-    model_path_finetuned = join(DIR_BACKEND, 'checkpoint_numbers_finetuned')
-    data_dir = join(DIR_BACKEND, 'data_small')
-    # train_model(data_dir, model_path)
-    finetune_model(model_path, data_dir, model_path_finetuned)
+    model_path = join(DIR_BACKEND, 'models', 'checkpoint_sign_detection')
+    model_path_finetuned = join(DIR_BACKEND, 'models', 'checkpoint_sign_detection_finetuned')
+    data_dir = DIR_SIGN_DATA
+    train_model(data_dir, model_path)
+    # finetune_model(model_path, data_dir, model_path_finetuned)
 
 
 def get_number_model(num_classes, trainable_layers=None, optimizer=tf.keras.optimizers.Adam(0.001)):
@@ -86,12 +88,12 @@ def get_number_dataset_train(data_dir, seed=42, subset='training'):
         preprocessing_function=prep_image_training,
         featurewise_center=False,
         featurewise_std_normalization=False,
-        rotation_range=3,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        shear_range=0.2,
+        # rotation_range=3,
+        # width_shift_range=0.2,
+        # height_shift_range=0.2,
+        # shear_range=0.2,
         horizontal_flip=False,
-        zoom_range=(0.8, 1.2),
+        # zoom_range=(0.8, 1.2),
         validation_split=0.2)
 
     train_dataset = datagen.flow_from_directory(data_dir, target_size=(128, 128), color_mode = 'rgb', class_mode='categorical', batch_size = 128, seed=seed, subset=subset)

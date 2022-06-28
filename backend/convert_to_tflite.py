@@ -4,15 +4,16 @@ import os
 import cv2
 from os.path import abspath, join, dirname
 from train_number_recognizer import get_number_dataset_train, get_number_dataset_validation, get_number_model
+from common import DIR_AP_DATA, DIR_SIGN_DATA
 os.environ["CUDA_VISIBLE_DEVICES"]="1" # second gpu
 
 
 def main():
     DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
     # raw_model_path = join(DIR_BACKEND, 'checkpoint_numbers_finetuned')
-    raw_model_path = join(DIR_BACKEND, 'checkpoint_numbers')
-    representative_dataset_dir = join(DIR_BACKEND, 'data_small')
-    tflite_model_path = join(DIR_BACKEND, 'tgf_quant.tflite')
+    raw_model_path = join(DIR_BACKEND, 'models', 'checkpoint_sign_detection')
+    representative_dataset_dir = DIR_SIGN_DATA
+    tflite_model_path = join(DIR_BACKEND, 'models', 'tgf_quant.tflite')
     save_as_tflite(raw_model_path, representative_dataset_dir, tflite_model_path)
     compare_models(raw_model_path, tflite_model_path, representative_dataset_dir)
 

@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from os.path import exists,abspath,join,dirname
 
 DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
+DIR_AP_DATA = "D:/OneDrive/Projects/TeslaGoFast/Data/ap_on_detection"
+DIR_SIGN_DATA = "D:/OneDrive/Projects/TeslaGoFast/Data/sign_detection"
 
 class Coords(BaseModel):
     current_x: int

@@ -7,6 +7,7 @@ import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from common import DIR_AP_DATA
 
 from detector import get_features_from_image
 
@@ -21,8 +22,8 @@ def get_features_array(image_names):
     return features
 
 def main():
-    ap_inactive_base_path = join(DIR_BACKEND, 'data_ap', '0')
-    ap_active_base_path = join(DIR_BACKEND, 'data_ap', '1')
+    ap_inactive_base_path = join(DIR_AP_DATA, '0')
+    ap_active_base_path = join(DIR_AP_DATA, '1')
 
     inactive_image_names = [join(ap_inactive_base_path, f) for f in listdir(ap_inactive_base_path) if isfile(join(ap_inactive_base_path, f))]
     active_image_names = [join(ap_active_base_path, f) for f in listdir(ap_active_base_path) if isfile(join(ap_active_base_path, f))]
@@ -41,9 +42,9 @@ def main():
     param = {'max_depth':10, 'eta':1, 'objective':'binary:logistic' }
     num_round = 2
     bst = xgb.train(param, all_data, num_round)
-    bst.save_model(join(DIR_BACKEND, 'ap_model.xgb'))
+    bst.save_model(join(DIR_BACKEND, 'models', 'ap_model.xgb'))
 
-    bst_loaded = xgb.Booster(model_file=join(DIR_BACKEND, 'ap_model.xgb'))      
+    bst_loaded = xgb.Booster(model_file=join(DIR_BACKEND, 'models', 'ap_model.xgb'))      
     preds = np.round(bst_loaded.predict(all_data, ntree_limit=bst_loaded.best_ntree_limit)).astype(int)
 
     print("Wrong images:")

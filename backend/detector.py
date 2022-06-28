@@ -70,7 +70,7 @@ class Detector:
         self.recording_sequence_idx = 0
         self.frame_count = 0
         self.last_fps_update = time.time()
-        self.ap_model = xgb.Booster(model_file=join(DIR_BACKEND, 'ap_model.xgb'))        
+        self.ap_model = xgb.Booster(model_file=join(DIR_BACKEND, 'models', 'ap_model.xgb'))        
 
     async def run(self):       
         async def get_run_task():
@@ -123,13 +123,13 @@ class Detector:
         library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'
 
         try:
-            model = join(DIR_BACKEND, 'tgf_quant_edgetpu.tflite')
+            model = join(DIR_BACKEND, 'models', 'tgf_quant_edgetpu.tflite')
             interpreter = Interpreter(model, experimental_delegates=[load_delegate(library)])
             interpreter.allocate_tensors()
             print('Using edgetpu')
             return interpreter
         except:
-            model = join(DIR_BACKEND, 'tgf_quant.tflite')
+            model = join(DIR_BACKEND, 'models', 'tgf_quant.tflite')
             interpreter = Interpreter(model)
             interpreter.allocate_tensors()
             print('Using default model')
@@ -181,8 +181,7 @@ class Detector:
             self.recording_sequence_idx += 1
 
             im_path_speed_limit = join(
-                DIR_BACKEND,
-                'recording', 
+                self.config.recording_path, 
                 self.session_id,
                 'speed_limit',
                 f"{str(speed_limit).zfill(3)}",  

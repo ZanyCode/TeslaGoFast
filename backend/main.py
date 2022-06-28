@@ -23,6 +23,7 @@ from pydantic import BaseModel
 import asyncio
 import uuid
 from tflite_runtime.interpreter import load_delegate, Interpreter
+import common
 
 def main():
     # Python relies on the registry to guess mimetypes. Seems to be broken in some cases (see https://github.com/encode/starlette/issues/829). 
@@ -135,7 +136,7 @@ def save_config(file, config: Coords):
     current_config.max_x = config.max_x
     current_config.max_y = config.max_y
 
-    save_config(file, current_config)  
+    common.save_config(file, current_config)  
 
 
 if __name__ == "__main__":
