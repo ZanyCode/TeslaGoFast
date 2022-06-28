@@ -6,6 +6,8 @@ tensorflow
 tqdm
 matplotlib
 scipy
+xgboost
+sklearn
 
 --extra-index-url https://google-coral.github.io/py-repo/ 
 tflite-runtime

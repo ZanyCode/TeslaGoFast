@@ -23,6 +23,8 @@ from pydantic import BaseModel
 import asyncio
 import uuid
 from tflite_runtime.interpreter import load_delegate, Interpreter
+import xgboost as xgb
+from train_ap_on_detection import get_features_from_image
 
 DIR_BACKEND = abspath(join(dirname(abspath(__file__))))
 FILE_CONFIG = join(DIR_BACKEND, 'config.json')
@@ -60,6 +62,7 @@ class Detector:
         self.recording_sequence_idx = 0
         self.frame_count = 0
         self.last_fps_update = time.time()
+        self.ap_model = xgb.Booster(model_file=join(DIR_BACKEND, 'ap_model.xgb'))
 
     async def run(self):       
         async def get_run_task():
@@ -95,15 +98,18 @@ class Detector:
         return image[box[1] + x_rnd : box[3] + x_rnd, box[0] + y_rnd :box[2] + y_rnd]
     
     def is_ap_on(self, img):
-        # Set minimum and max HSV values to display
-        lower = np.array([90, 0, 0])
-        upper = np.array([179, 255, 255])
+        # # Set minimum and max HSV values to display
+        # lower = np.array([90, 0, 0])
+        # upper = np.array([179, 255, 255])
 
-        # Create HSV Image and threshold into a range.
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, lower, upper)
-        detected_ap_pixels = np.sum(mask) / (mask.shape[0] * mask.shape[1])
-        return detected_ap_pixels > 4
+        # # Create HSV Image and threshold into a range.
+        # hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        # mask = cv2.inRange(hsv, lower, upper)
+        # detected_ap_pixels = np.sum(mask) / (mask.shape[0] * mask.shape[1])
+        # return detected_ap_pixels > 4
+        features = get_features_from_image(img)
+        pred = self.ap_model.predict(xgb.DMatrix([features]))
+        return pred[0] > 0.5
 
     def get_interpreter(self):
         library = 'libedgetpu.so.1' if self.is_linux else 'edgetpu.dll'

@@ -128,21 +128,22 @@ class TestOCR(unittest.TestCase):
             mask = cv2.inRange(hsv, lower, upper)
             return mask
 
-        ap_inactive_h = [np.mean(get_mask(img)) for img in ap_inactive_hsv]
-        ap_active_h = [np.mean(get_mask(img)) for img in ap_active_hsv]
+        ap_inactive_coeff = [np.mean(get_mask(img)) for img in ap_inactive_hsv]
+        ap_active_coeff = [np.mean(get_mask(img)) for img in ap_active_hsv]
+
+        print(np.sum(np.array(ap_inactive_coeff) > 4))
+        print(np.sum(np.array(ap_active_coeff) <= 4))
 
         fig7, ax7 = plt.subplots()
         ax7.set_title('Inactive')
-        ax7.hist(ap_inactive_h, 500)
+        ax7.hist(ap_inactive_coeff, 500)
 
         fig8, ax8 = plt.subplots()
         ax8.set_title('Active')
-        ax8.hist(ap_active_h, 500)
+        ax8.hist(ap_active_coeff, 500)
 
         plt.show()
        
-        print(len(ap_inactive_images))
-
 if __name__ == '__main__':
     unittest.main()
 
