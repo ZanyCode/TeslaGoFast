@@ -76,18 +76,26 @@ class Detector:
         async def get_run_task():
             while(True):
                 self.image_full = self.capture_image(False)
-                self.image_speed_limit = self.extract_image_section(self.image_full, self.speed_limit_box, 22)
-                self.image_current_speed = self.extract_image_section(self.image_full, self.current_speed_box, 22)
+                self.image_speed_limit = self.extract_image_section(self.image_full, self.speed_limit_box)
+                self.image_current_speed = self.extract_image_section(self.image_full, self.current_speed_box)               
                 is_ap_on = self.is_ap_on(self.image_current_speed)
+
+                # Save snapshot a little bigger than image, that way we can augment it during training by shifting randomly                
+                extension_for_snapshot = 20
+                extension_box = [-extension_for_snapshot, -extension_for_snapshot,   extension_for_snapshot, extension_for_snapshot]
+                extended_speed_limit_box = [sum(x) for x in zip(self.speed_limit_box, extension_box)]
+                extended_current_speed_box = [sum(x) for x in zip(self.current_speed_box, extension_box)]
+                image_speed_limit_extended = self.extract_image_section(self.image_full, extended_speed_limit_box)
+                image_current_speed_extended = self.extract_image_section(self.image_full, extended_current_speed_box)
 
                 if is_ap_on:
                     speed_limit = self.estimate_speed(self.image_speed_limit)
                     current_speed = self.estimate_speed(self.image_current_speed)
-                    self.save_snapshot(self.image_speed_limit, speed_limit, self.image_current_speed, current_speed)                        
+                    self.save_snapshot(image_speed_limit_extended, speed_limit, image_current_speed_extended, current_speed)                        
                     self.update_display(True, speed_limit, current_speed)
                 else:
                     self.update_display(False)   
-                    self.save_snapshot(self.image_speed_limit, 42, self.image_current_speed, 43)                        
+                    self.save_snapshot(image_speed_limit_extended, "ap_off", image_current_speed_extended, "ap_off")                        
 
 
                 await asyncio.sleep(0.05)
@@ -101,9 +109,8 @@ class Detector:
         
         raise 'Error recording image'
 
-    def extract_image_section(self, image, box, random_shift=None):
-        x_rnd,y_rnd = (0,0,) if not random_shift else (random.randint(-random_shift, random_shift), random.randint(-random_shift, random_shift),)
-        return image[box[1] + x_rnd : box[3] + x_rnd, box[0] + y_rnd :box[2] + y_rnd]
+    def extract_image_section(self, image, box):
+        return image[box[1] : box[3], box[0] : box[2]]
     
     def is_ap_on(self, img):
         # # Set minimum and max HSV values to display

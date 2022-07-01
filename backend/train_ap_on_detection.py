@@ -40,7 +40,7 @@ def main():
     all_data = xgb.DMatrix(data, label=labels)
 
     param = {'max_depth':10, 'eta':1, 'objective':'binary:logistic' }
-    num_round = 2
+    num_round = 8
     bst = xgb.train(param, all_data, num_round)
     bst.save_model(join(DIR_BACKEND, 'models', 'ap_model.xgb'))
 
